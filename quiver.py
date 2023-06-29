@@ -2,7 +2,7 @@ import pathlib
 from matplotlib import pyplot as plt
 import yaml
 import networkx as nx
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterator, List
 from dataclasses import dataclass
 
 
@@ -43,34 +43,33 @@ def edgelist(node_from, node_to):
             yield (node_from, node_to)
 
 
-def read_graph_from_yaml(filename: str) -> nx.DiGraph:
+def read_graphs_from_yaml(filename: str) -> Iterator[nx.DiGraph]:
     path = pathlib.Path(filename)
     with path.open("r") as file:
-        graph_data: Dict[str, Any] = yaml.safe_load(file)
+        for graph_data in yaml.safe_load_all(file):
 
-    # graph = nx.DiGraph(graph_data)
-    from_edgelist = edgelist(path.stem, graph_data)
-    graph = nx.from_edgelist(from_edgelist, create_using=nx.DiGraph)
-    return graph
+            from_edgelist = edgelist(path.stem, graph_data)
+            yield nx.from_edgelist(from_edgelist, create_using=nx.DiGraph)
+
+@dataclass
+class Cat:
+    pass
 
 @dataclass
 class Free:
     graph: nx.DiGraph
  
     def paths_graph(self) -> nx.DiGraph:
-        paths_graph = nx.DiGraph()
+        return nx.from_edgelist(self.paths_edgelist(), create_using=nx.DiGraph)
 
+    def paths_edgelist(self):
         for source in self.graph.nodes():
             for target in self.graph.nodes():
+                # paths = nx.all_simple_paths(self.graph, source, target)
+                # yield from map(nx.utils.pairwise, paths)
                 if source != target:
                     if nx.has_path(self.graph, source, target):
-                        paths_graph.add_edge(source, target)
-
-        return paths_graph
-
-@dataclass
-class Cat:
-    pass
+                        yield(source, target)
 
 @dataclass
 class Fun:
@@ -80,11 +79,22 @@ class Fun:
 
 # # Read lhs graph from YAML
 # lhs_filename: str = "lhs_graph.yaml"
-# lhs: nx.DiGraph = read_graph_from_yaml(lhs_filename)
+# lhs: nx.DiGraph = read_graphs_from_yaml(lhs_filename)
 
 # Read rhs graph from YAML
 rhs_filename: str = "main.yaml"
-rhs: nx.DiGraph = read_graph_from_yaml(rhs_filename)
+for rhs in read_graphs_from_yaml(rhs_filename):
+    # Compose quiver with rhs graph
+    res = Free(rhs).paths_graph()
+    # res = nx.compose(free, nx.empty_graph("1"))
+    # res = rhs
+
+    # Print the composed graph
+    nx.draw_networkx(res)
+
+    # nx.draw_networkx(paths_graph)
+    plt.show()
+
 
 # # https://ncatlab.org/nlab/show/free+diagram
 # # C: Cat
@@ -98,14 +108,3 @@ rhs: nx.DiGraph = read_graph_from_yaml(rhs_filename)
 # # Colimit [] {}
 # # Free(Diagram)
 # X = Fun(J, C)
-
-# Compose quiver with rhs graph
-# res: nx.DiGraph = nx.compose(Free(rhs).paths_graph(), lhs)
-res = rhs
-# res = Free(rhs).paths_graph()
-
-# Print the composed graph
-nx.draw_networkx(res)
-
-# nx.draw_networkx(paths_graph)
-plt.show()
