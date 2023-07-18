@@ -70,10 +70,9 @@ class NxQuiver:
     def paths(self) -> Self:
         return NxQuiver(nx.transitive_closure(self.digraph, reflexive=True))
     
-    def __call__(self, obj):
+    def map(self, digraph: nx.DiGraph):
         """calling a quiver works as calling the underlying function"""
-        digraph = self.digraph.edge_subgraph(self.digraph.edges(obj))
-        return NxQuiver(digraph)
+        return NxQuiver(nx.compose(self.digraph, digraph))
 
 class FreeDiagram:
     """
@@ -81,14 +80,16 @@ class FreeDiagram:
     """
     def __init__(self, quiver: NxQuiver):
         self.quiver = quiver
+        self.digraph = quiver.digraph
 
     def map(self, quiver: NxQuiver):
-        # a functor of the form X:Free(I)->C
-        return self.quiver(quiver)
+        return FreeDiagram(self.quiver.map(quiver.digraph))
     
-    @property
-    def digraph(self) -> nx.DiGraph:
-        return self.digraph.digraph
+    def flat_map(self, quiver: NxQuiver):
+        digraph: nx.DiGraph = self.quiver.paths().digraph
+        digraph.remove_edges_from(nx.selfloop_edges(digraph))
+        quiver = NxQuiver(nx.transitive_reduction(digraph)).map(quiver.digraph)
+        return FreeDiagram(quiver)
 
 
 def eval_digraphs(digraphs: Iterator[nx.DiGraph]) -> nx.DiGraph:
@@ -99,25 +100,14 @@ def eval_digraphs(digraphs: Iterator[nx.DiGraph]) -> nx.DiGraph:
     quiero tener la info hacia ambos lados.
     """
     digraphs = iter(digraphs)
-    diagram = FreeDiagram(NxQuiver(next(digraphs)))
+    head = NxQuiver(next(digraphs))
+    tail = NxQuiver(nx.DiGraph())
     for digraph in digraphs:
-        diagram = diagram.map(digraph)
-        # a directed graph I
-        # current_digraph = nx.transitive_closure(current_digraph, reflexive=True)
-        # print_digraph(current_digraph)
-        # current_digraph = current_digraph.subgraph(digraph, )
-        # a functor of the form X:Free(I)->C
-        # digraph = nx.transitive_reduction(digraph)
-        # current_digraph = nx.transi(current_digraph, digraph)
-        # print_digraph(digraph)
-        # print_digraph(current_digraph)
-    return diagram.digraph
+        tail = tail.map(digraph)
+    return FreeDiagram(tail).flat_map(head).digraph
 
 
 def print_digraph(digraph: nx.DiGraph):
-    # digraph = nx.single_source_shortest_path(digraph, "actors")
-    # digraph = nx.DiGraph(digraph)
-    # digraph = nx.transitive_reduction(digraph)
     nx.draw_spring(digraph, with_labels=True)
     plt.show()
 
@@ -125,26 +115,8 @@ def print_digraph(digraph: nx.DiGraph):
 def read_eval_print_loop(path_stem: str):
     yamls = read_yamls(path_stem)
     root = nx.DiGraph()
-    root.add_node(path_stem)
+    root.add_edge(path_stem, path_stem)
     digraphs = read_digraphs(yamls, root)
-    # digraphs = list(digraphs)
-    # for digraph in digraphs:
-    #     print_digraph(digraph)
     print_digraph(eval_digraphs(digraphs))
-
-    # res_head = NxQuiver(d_head)
-    # res_tail = NxQuiver(d_tail)
-    # TailCat = Free(res_tail)
-    # diag = FreeDiag(TailCat, res_head)
-    # keseyo = res_head.paths.digraph
-    # nx.draw_networkx(keseyo, pos=nx.shell_layout(keseyo))
-    # res_mid = Free(NxQuiver(d_mid))
-
-    # cat = SIndCat(res_head)
-    # SIndFun
-    # res = res_head.digraph.subgraph(nx.transitive_closure_dag(res_tail.digraph.adj)) #.edge_subgraph([("apellido", "fede")])
-    # desc = nx.descendants(res_head.digraph, res_tail.digraph.adj)
-    # asc = res_head.digraph.subgraph(res_tail.digraph.adj)
-    # res = res_head.digraph.subgraph([desc, asc]) #.edge_subgraph([("apellido", "fede")])
 
 read_eval_print_loop("actors")

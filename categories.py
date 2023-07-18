@@ -22,7 +22,7 @@ class Cat:
     def opposite(self) -> Self:
         return None
     
-    def __call__(self, obj):
+    def map(self, obj):
         """composing two category objects works as..."""
         self.morphisms
         pass
@@ -46,7 +46,7 @@ class Free:
     def opposite(self) -> Self:
         return Free(self.quiver.opposite())
 
-    def __call__(self, obj):
+    def map(self, obj):
         return self.quiver(obj)
 
 
@@ -64,7 +64,7 @@ class FreeDiag:
     # tengo que interpretar este diagrama como
     # un funtor X:J->C con J shape = Free(quiver)
     # y obj en quiver
-    def __call__(self, obj):
+    def map(self, obj):
         return self.quiver(obj)
         return self.C(obj)
 
@@ -80,7 +80,7 @@ class FreeDiag:
 #         self.C = C
 #         self.D = D
 
-#     def __call__(self, obj) -> Any:
+#     def map(self, obj) -> Any:
 #         """maps obj in C to an object in D"""
 #         return self.C(obj)
 
