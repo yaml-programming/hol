@@ -1,0 +1,20 @@
+# https://neo4j.com/docs/getting-started/data-modeling/guide-data-modeling/
+Acted in:
+  Zachry:
+    Movie: Cloud Atlas
+    Person: Tom Hanks
+  Agent Smith:
+    Movie: The Matrix
+    Person: Hugo Weaving
+  Bill Smoke:
+    Movie: Cloud Atlas
+    Person: Hugo Weaving
+Directed:
+  Lana Wachowski:
+    Cloud Atlas:
+    The Matrix:
+
+---
+
+- Acted in
+- Cloud Atlas

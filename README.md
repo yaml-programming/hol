@@ -1,5 +1,7 @@
 [YAML] is a human-friendly data serialization language for all programming languages.
 
+Embedded mathematical tools for all programming languages.
+
 > YAML represents any native data structure using three node kinds: sequence, mapping and scalar - any datum with opaque structure presentable as a series of Unicode characters.
 >
 > Combined, these primitives generate directed graph structures
