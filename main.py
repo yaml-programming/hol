@@ -9,26 +9,26 @@ from categories import *
 YamlNode = yaml.nodes.Node
 
 def edgelist(node_from: YamlNode, node_to: YamlNode):
-    if node_from is None or node_to is None:
-        pass
-    elif isinstance(node_from, yaml.nodes.SequenceNode):
-        current = node_to
-        for neighbor_from in node_from:
-            yield from edgelist(neighbor_from, current)
-            current = neighbor_from
-    elif isinstance(node_from, yaml.nodes.MappingNode):
-        for neighbor_from, neighbor_to in node_from.items():
-            yamls = edgelist(node_to)
-            for (neighbor_from, neighbor_to) in edgelist(yamls):
-                yield from edgelist(neighbor_from, digraph)
-    # node_from is a scalar below
-    else:
-        if isinstance(node_to, yaml.nodes.SequenceNode):
+    match (node_from, node_to):
+        case (None, _) | (_, None):
+            pass
+        case (yaml.nodes.SequenceNode(), _):
+            current = node_to
+            for neighbor_from in node_from:
+                yield from edgelist(neighbor_from, current)
+                current = neighbor_from
+        case (yaml.nodes.MappingNode(), _):
+            for neighbor_from, neighbor_to in node_from.items():
+                yamls = edgelist(node_to)
+                for (neighbor_from, neighbor_to) in edgelist(yamls):
+                    yield from edgelist(neighbor_from, digraph)
+        # node_from is a scalar below
+        case (_, yaml.nodes.SequenceNode()):
             neighbor_from = node_from
             for neighbor_to in node_to.value:
                 yield from edgelist(neighbor_from, neighbor_to)
                 neighbor_from = neighbor_to
-        elif isinstance(node_to, yaml.nodes.MappingNode):
+        case (_, yaml.nodes.MappingNode()):
             for neighbor_from, neighbor_to in node_to.value:
                 # primitive as in LISP
                 if neighbor_to == "read":
@@ -38,7 +38,7 @@ def edgelist(node_from: YamlNode, node_to: YamlNode):
                     yield from edgelist(node_from, neighbor_from)
                     yield from edgelist(neighbor_from, neighbor_to)
         # both are scalars
-        else:
+        case _:
             yield (node_from.value, node_to.value)
 
 
