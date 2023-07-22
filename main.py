@@ -9,7 +9,7 @@ from yaml.nodes import *
 from categories import *
 
 
-def edgelist(node_from: Node, node_to: Node) -> Iterator[Tuple[Any, Any]]:
+def eval_to_edgelist(node_from: Node, node_to: Node) -> Iterator[Tuple[Any, Any]]:
     match (node_from, node_to):
         case ScalarNode(tag="tag:yaml.org,2002:null"), ScalarNode(value=scalar_to):
             yield from []
@@ -22,49 +22,21 @@ def edgelist(node_from: Node, node_to: Node) -> Iterator[Tuple[Any, Any]]:
         case (_, SequenceNode(value=node_path_to)):
             current = node_from
             for node in node_path_to:
-                yield from edgelist(current, node)
+                yield from eval_to_edgelist(node, current)
                 current = node
         case (SequenceNode(value=node_path_from), _):
             current = node_to
             for node in reversed(node_path_from):
-                yield from edgelist(node, current)
+                yield from eval_to_edgelist(node, current)
                 current = node
         case (_, MappingNode(value=edges_to)):
             for neighbor_from, neighbor_to in edges_to:
-                yield from edgelist(node_from, neighbor_from)
-                yield from edgelist(neighbor_from, neighbor_to)
+                yield from eval_to_edgelist(neighbor_from, node_from)
+                yield from eval_to_edgelist(neighbor_to, neighbor_from)
         case (MappingNode(value=edges_from), _):
             for neighbor_from, neighbor_to in edges_from:
-                yield from edgelist(neighbor_from, neighbor_to)
-                yield from edgelist(neighbor_to, node_to)
-        # case (MappingNode(value=edges_from), _):
-        #     for neighbor_from, neighbor_to in edges_from:
-        #         yield from edgelist(neighbor_from, neighbor_to)
-        #         yield from edgelist(neighbor_to, node_to)
-
-        # case (ScalarNode(value=scalar_from), ScalarNode(value=scalar_to)):
-        #     yield (scalar_from, scalar_to)
-        #     current = node_to
-        #     for neighbor_from in node_list_from:
-        #         yield from edgelist(neighbor_from, current)
-        #         current = neighbor_from
-        #         # yamls = edgelist(node_to)
-        #         # for (neighbor_from, neighbor_to) in edgelist(yamls):
-        # # node_from is a scalar below
-        # case (_, MappingNode(value=node_to)):
-        #     for neighbor_from, neighbor_to in node_to:
-        #         yield from edgelist(node_from, neighbor_from)
-        #         yield from edgelist(neighbor_from, neighbor_to)
-        #         # # primitive as in LISP
-        #         # if neighbor_to == "read":
-        #         #     for (neighbor_from, neighbor_to) in edgelist(neighbor_from):
-        #         #         yield from edgelist(neighbor_from, digraph)
-        # case (_, SequenceNode(value=node_to)):
-        #     neighbor_from = node_from
-        #     for neighbor_to in node_to:
-        #         yield from edgelist(neighbor_from, neighbor_to)
-        #         neighbor_from = neighbor_to
-        #     yield (node_from.value, node_to)
+                yield from eval_to_edgelist(neighbor_to, neighbor_from)
+                yield from eval_to_edgelist(node_to, neighbor_to)
 
 
 class NxQuiver:
@@ -105,27 +77,18 @@ class FreeDiagram:
         return FreeDiagram(quiver)
 
 
-def eval_node(node: Node) -> nx.DiGraph:
-    """
-    https://ncatlab.org/nlab/show/free+diagram
-    quiero combinarlos de manera que se revele un DSL usable.
-    por ejemplo si tengo un path parcial que es único
-    quiero tener la info hacia ambos lados.
-    """
-    return nx.DiGraph(edgelist(ScalarNode(tag="tag:yaml.org,2002:null", value="~"), node))
-
-
 def print_digraph(digraph: nx.DiGraph):
+    digraph.remove_edges_from(nx.selfloop_edges(digraph))
+    digraph = nx.transitive_reduction(digraph)
     nx.draw_spring(digraph, with_labels=True)
     plt.show()
 
 
-def read_eval_print_loop(root: Node):
-    print_digraph(eval_node(root))
-
-
 path = pathlib.Path(sys.argv[1]).with_suffix(".yaml")
 with path.open("r") as file:
-    yamls = yaml.compose_all(file)
-    root = SequenceNode(tag="seq", value=yamls)
-    read_eval_print_loop(root)
+    yaml_representation_trees = yaml.compose_all(file)
+    root = ScalarNode(tag="str", value=path.stem)
+    document = SequenceNode(tag="seq", value=yaml_representation_trees)
+    edgelist = eval_to_edgelist(root, document)
+    digraph = nx.DiGraph(edgelist)
+    print_digraph(digraph)
