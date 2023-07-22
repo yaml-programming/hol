@@ -6,47 +6,47 @@ from typing import Any, Iterator, List, Self, Union
 
 from categories import *
 
-YamlNode = Union[List, dict, str, nx.DiGraph]
+YamlNode = yaml.nodes.Node
 
 def edgelist(node_from: YamlNode, node_to: YamlNode):
     if node_from is None or node_to is None:
         pass
-    elif isinstance(node_from, list):
+    elif isinstance(node_from, yaml.nodes.SequenceNode):
         current = node_to
         for neighbor_from in node_from:
             yield from edgelist(neighbor_from, current)
             current = neighbor_from
-    elif isinstance(node_from, dict):
+    elif isinstance(node_from, yaml.nodes.MappingNode):
         for neighbor_from, neighbor_to in node_from.items():
-            yamls = read_yamls(node_to)
-            for digraph in read_digraphs(yamls):
+            yamls = edgelist(node_to)
+            for (neighbor_from, neighbor_to) in edgelist(yamls):
                 yield from edgelist(neighbor_from, digraph)
     # node_from is a scalar below
     else:
-        if isinstance(node_to, list):
+        if isinstance(node_to, yaml.nodes.SequenceNode):
             neighbor_from = node_from
-            for neighbor_to in node_to:
+            for neighbor_to in node_to.value:
                 yield from edgelist(neighbor_from, neighbor_to)
                 neighbor_from = neighbor_to
-        elif isinstance(node_to, dict):
-            for neighbor_from, neighbor_to in node_to.items():
+        elif isinstance(node_to, yaml.nodes.MappingNode):
+            for neighbor_from, neighbor_to in node_to.value:
                 # primitive as in LISP
                 if neighbor_to == "read":
-                    for digraph in read_digraphs(neighbor_from):
+                    for (neighbor_from, neighbor_to) in edgelist(neighbor_from):
                         yield from edgelist(neighbor_from, digraph)
                 else:
                     yield from edgelist(node_from, neighbor_from)
                     yield from edgelist(neighbor_from, neighbor_to)
         # both are scalars
         else:
-            yield (node_from, node_to)
+            yield (node_from.value, node_to.value)
 
 
 
 def read_yamls(path_stem: str) -> List[Any]:
     path = pathlib.Path(path_stem).with_suffix(".yaml")
     with path.open("r") as file:
-        return list(yaml.safe_load_all(file))
+        return list(yaml.compose_all(file))
 
 def read_digraphs(graphs_data: List[Any], root: nx.DiGraph) -> Iterator[nx.DiGraph]:
     for graph_data in graphs_data:
@@ -114,8 +114,7 @@ def print_digraph(digraph: nx.DiGraph):
 
 def read_eval_print_loop(path_stem: str):
     yamls = read_yamls(path_stem)
-    root = nx.DiGraph()
-    root.add_edge(path_stem, path_stem)
+    root = yaml.nodes.ScalarNode(tag='str', value=path_stem)
     digraphs = read_digraphs(yamls, root)
     print_digraph(eval_digraphs(digraphs))
 
