@@ -11,8 +11,12 @@ from categories import *
 
 def edgelist(node_from: Node, node_to: Node) -> Iterator[Tuple[Any, Any]]:
     match (node_from, node_to):
-        case (None, _) | (_, None):
-            yield
+        case ScalarNode(tag="tag:yaml.org,2002:null"), ScalarNode(value=scalar_to):
+            yield from []
+            # yield scalar_to, scalar_to
+        case ScalarNode(value=scalar_from), ScalarNode(tag="tag:yaml.org,2002:null"):
+            yield from []
+            # yield scalar_from, scalar_from
         case (ScalarNode(value=scalar_from), ScalarNode(value=scalar_to)):
             yield scalar_from, scalar_to
         case (_, SequenceNode(value=node_path_to)):
@@ -29,6 +33,10 @@ def edgelist(node_from: Node, node_to: Node) -> Iterator[Tuple[Any, Any]]:
             for neighbor_from, neighbor_to in edges_to:
                 yield from edgelist(node_from, neighbor_from)
                 yield from edgelist(neighbor_from, neighbor_to)
+        case (MappingNode(value=edges_from), _):
+            for neighbor_from, neighbor_to in edges_from:
+                yield from edgelist(neighbor_from, neighbor_to)
+                yield from edgelist(neighbor_to, node_to)
         # case (MappingNode(value=edges_from), _):
         #     for neighbor_from, neighbor_to in edges_from:
         #         yield from edgelist(neighbor_from, neighbor_to)
@@ -104,7 +112,7 @@ def eval_node(node: Node) -> nx.DiGraph:
     por ejemplo si tengo un path parcial que es único
     quiero tener la info hacia ambos lados.
     """
-    return nx.DiGraph(edgelist(ScalarNode(tag="str", value="root"), node))
+    return nx.DiGraph(edgelist(ScalarNode(tag="tag:yaml.org,2002:null", value="~"), node))
 
 
 def print_digraph(digraph: nx.DiGraph):
