@@ -1,10 +1,22 @@
 import networkx as nx
-from yaml import ScalarNode
+import yaml
 
 from nx_yaml import to_digraph
 
 
-def test_null_node():
-    null_node = ScalarNode(tag="tag:yaml.org,2002:null", value=None)
-    digraph = to_digraph(null_node)
+def test_null():
+    document = ""
+    digraph = doc_digraph(document)
     assert nx.utils.graphs_equal(digraph, nx.null_graph())
+
+
+def test_singleton():
+    document = "false"
+    digraph = doc_digraph(document)
+    assert list(digraph.nodes) == [False]
+    assert list(digraph.edges) == [(False, False)]
+
+
+def doc_digraph(document: str):
+    node = yaml.compose(document)
+    return to_digraph(node)
