@@ -8,6 +8,7 @@ networkx = "*"
 pyyaml = "*"
 matplotlib = "*"
 types-pyyaml = "*"
+nx-yaml = "*"
 
 [dev-packages]
 pytest = "*"
