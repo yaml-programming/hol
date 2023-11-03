@@ -4,14 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-networkx = "*"
-pyyaml = "*"
-matplotlib = "*"
-types-pyyaml = "*"
 nx-yaml = "*"
+discopy = "*"
 
 [dev-packages]
 pytest = "*"
+twine = "*"
+build = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"

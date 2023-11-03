@@ -17,6 +17,15 @@ We work with high level concepts without defining a new language syntax, even av
 [YAML]: https://yaml.org/
 [Quiver]: https://ncatlab.org/nlab/show/quiver
 
+# Usage
+
+```sh
+python . examples/hello-world.yaml
+```
+```yaml
+Hello world!
+```
+
 # Mathematical foundations
 
 * nLab: [nPOV]

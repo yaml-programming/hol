@@ -1,0 +1,8 @@
+bool:
+  false: null
+  true: just
+
+either:
+  bool:
+    left: false
+    right: true

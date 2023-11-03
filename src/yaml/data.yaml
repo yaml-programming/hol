@@ -1,0 +1,19 @@
+bool:
+  false:
+  true:
+
+maybe:
+  null: null
+  just: a
+
+either:
+  left: a
+  right: b
+
+# ---
+
+# maybe:
+#   bool:
+#     false: null
+#     true:
+#       just: a
