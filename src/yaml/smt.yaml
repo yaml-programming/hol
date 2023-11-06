@@ -1,0 +1,11 @@
+signature:
+equations:
+---
+signature:
+  generators:
+    arity: coarity
+equations:
+  left:
+    arity: coarity
+  right:
+    arity: coarity
