@@ -26,6 +26,10 @@ python . examples/hello-world.yaml
 Hello world!
 ```
 
+# Development
+
+Run `make` to compose and build gifs for all YAML files.
+
 # Mathematical foundations
 
 * nLab: [nPOV]

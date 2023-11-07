@@ -1,19 +1,2 @@
-# TODO derive parent from file name
-bool:
-  and:
-    false: false
-    true:
-      true: true
-      false: false
-
-  or:
-    true: true
-    false:
-      true: true
-      false: false
-
-  not:
-    true: false
-    false: true
-
-  otherwise: true
+true:
+false:

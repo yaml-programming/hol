@@ -1,3 +1,7 @@
+# String diagrams
+*.png
+*.gif
+
 # VS code
 .vscode
 

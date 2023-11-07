@@ -1,8 +1,6 @@
-bool:
-  false: null
-  true: just
-
-either:
-  bool:
-    left: false
-    right: true
+maybe:
+  nothing:
+  just:
+# ---
+# nothing: maybe
+# just: maybe
