@@ -23,10 +23,20 @@ def compose_graphs(graphs):
         G = H
     return G_tensor.bubble()
 
-def compose_graph_file(path):
-    G = yaml.compose_all(open(path), Loader=NxSafeLoader)
+def path_edges(path: pathlib.Path):
+    for subpath in path.iterdir():
+        if path.is_dir() and subpath.suffix == ".yaml":
+            yield path.stem, subpath.stem
+
+
+def compose_graph_file(path: pathlib.Path):
+    if path.is_dir():
+        G = [nx.DiGraph(path_edges(path))]
+    else:
+        G = yaml.compose_all(open(path), Loader=NxSafeLoader)
     G = compose_graphs(G)
-    G.draw(path=path.with_suffix(".png"))
+    # TODO temporary path
+    G.to_gif(path=path.with_suffix(".gif"))
     return G
 
 def compose_all_graphs():
@@ -39,8 +49,8 @@ def graph_signature_boxes(G):
         if node:
             yield Box(
                 node,
-                Ty(*sorted(n for n in G.predecessors(node) if n)),
-                Ty(*sorted(n for n in G.successors(node) if n)))
+                Ty(*sorted(n if n else node for n in G.successors(node))),
+                Ty(*sorted(n if n else node for n in G.predecessors(node))))
         else:
             yield Id()
 

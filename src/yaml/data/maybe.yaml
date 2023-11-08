@@ -1,6 +1,2 @@
-maybe:
-  nothing:
-  just:
-# ---
-# nothing: maybe
-# just: maybe
+nothing:
+just: a
