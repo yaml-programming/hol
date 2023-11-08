@@ -1,3 +1,4 @@
+# YAML
 [YAML] is a human-friendly data serialization language for all programming languages.
 
 Embedded mathematical tools for all programming languages.
@@ -26,9 +27,15 @@ python . examples/hello-world.yaml
 Hello world!
 ```
 
-# Development
+# Development environment
+> Expertise with `make`, `bash` or UNIX in general isn't required to write diagrams.
+## Setup
+Just cloning the repository and running `make` will show there are no changes to be made.
+Every commit is guaranteed to be idempotent on the `make` invocation to make things straightforward.
 
-Run `make` to compose and build gifs for all YAML files.
+## Dev loop
+Whenever you change the `src/yaml` contents, running `make` will validate only the changed files. On success these are compiled and outputted as gifs next to the `.yaml` file.
+Every directory is also scanned and a string diagram gif describing its contents is automatically generated.
 
 # Mathematical foundations
 

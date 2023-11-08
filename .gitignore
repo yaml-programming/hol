@@ -1,6 +1,7 @@
 # String diagrams
 *.png
 *.gif
+!src/yaml/**/*.gif
 
 # VS code
 .vscode
