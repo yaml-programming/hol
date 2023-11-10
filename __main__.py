@@ -15,40 +15,38 @@ Ty = frobenius.Ty
 Box = frobenius.Box
 
 def compose_graphs(graphs):
-    G = nx.DiGraph()
-    boundary = Id()
-    for H in graphs:
-        boundary >>= Id().tensor(*graph_spider_boundary(G, H))
-        G = H
-    return boundary or Id()
+    diagram = Id()
+    for G in graphs:
+        i = Id().tensor(*(Spider(0, G.in_degree(n) or 1, Ty(n)) for n in sorted(G.nodes) if n != '' and G.out_degree(n) == 0))
+        o = Id().tensor(*(Spider(G.out_degree(n) or 1, 0, Ty(n)) for n in sorted(G.nodes) if n != '' and G.in_degree(n) == 0))
+        diagram >>= i
+        diagram >>= cospan_hypergraph(G)
+        diagram >>= o
+    return diagram
 
-def graph_spider_boundary(G, H):
+def cospan_hypergraph(G):
     # importa el orden de cables no de cajas
-    for node in sorted(set(H.nodes).union(G.nodes)):
-        n_legs_in = 0
-        n_legs_out = 0
-        if not node:
+    s = Id()
+    for node in sorted(G.nodes):
+        if node == '':
             continue
-        if node in G and node in H:
-            G_in = G.in_degree(node)
-            G_out = G.out_degree(node)
-            H_in = H.in_degree(node)
-            H_out = H.out_degree(node)
-            n_legs_in += G_in + H_in
-            n_legs_out += G_out + H_out
-        elif node in G:
-            G_out = G.out_degree(node)
-            n_legs_in += G_out
-            if G_out == 0:
-                n_legs_in += 1
-        elif node in H:
-            H_in = H.in_degree(node)
-            n_legs_out += H_in
-            if H_in == 0:
-                n_legs_out += 1
 
+        n_legs_out = 0
+        n_legs_in = 0
+        # n_legs_out += G.out_degree(node) or 1
+        # n_legs_in += G.in_degree(node) or 1
+        if G.in_degree(node) == 0:
+            n_legs_out += G.out_degree(node) or 1
+        if G.out_degree(node) == 0:
+            n_legs_in += G.in_degree(node) or 1
+        # if G.has_edge(node, ''):
+        #     n_legs_out -= 1
+        # if G.has_edge('', node):
+            # n_legs_out -= 1
+            # n_legs_in += 1
         spider = Spider(n_legs_in, n_legs_out, Ty(node))
-        yield spider
+        s @= spider
+    return s
 
 def path_edges(path: pathlib.Path):
     for subpath in path.iterdir():
@@ -62,12 +60,12 @@ def compose_graph_file(path: pathlib.Path):
     else:
         root = nx.DiGraph()
         root.add_node(path.stem)
-        G = itertools.chain(
-            [root],
-            yaml.compose_all(open(path), Loader=NxSafeLoader))
+        G = (#root,
+            *yaml.compose_all(open(path), Loader=NxSafeLoader),
+            )
     G = compose_graphs(G)
     # TODO temporary path
-    G.to_gif(path=path.with_suffix(".gif"), loop=True)
+    G.to_gif(path=path.with_suffix(".gif"), loop=True, margins=(0.2, 0.05))
     return G
 
 def compose_all_graphs():
