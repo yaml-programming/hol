@@ -93,10 +93,6 @@ class HypergraphComposer:
             tag = self.DEFAULT_SCALAR_TAG
         node = H.id(Ty(str(event.value))) \
             if event.value != "" else H.id()
-        # dom = Ty(str(event.value))
-        # cod = Ty(str(event.value))
-        # node = H.from_box(Box(str(event.start_mark), dom, cod))
-        # node = H.spiders(1, 1, ty)
         if anchor is not None:
             self.anchors[anchor] = node
         return node
@@ -134,46 +130,41 @@ class HypergraphComposer:
         if anchor is not None:
             self.anchors[anchor] = node
         while not self.check_event(MappingEndEvent):
-            event_key = self.peek_event()
             item_key = self.compose_node(node, None)
-            event_value = self.peek_event()
             item_value = self.compose_node(node, item_key)
-            kv = self.compose_entry(item_key, item_value)
+            kv = compose_entry(item_key, item_value)
             node @= kv
         end_event = self.get_event()
         node.end_mark = end_event.end_mark
         return node
 
-    def compose_entry(self, item_key, item_value):
-        # a cospan for each box in boxes::
-        #     range(len(box.dom)) -> range(n_spiders) <- range(len(box.cod))
-        # Composition of two hypergraph diagram is given by the pushout of the span::
-        #     range(self.n_spiders) <- range(len(self.cod)) -> range(other.n_spiders)
-        interface_ty = Ty(*sorted({*item_key.cod.inside, *item_value.dom.inside}))
-        boxes = (
-            # item_key.to_diagram(),
-            H.id(interface_ty).to_diagram(),
-            # item_value.to_diagram(),
-        )
-        box_wires = (
-            # (item_key.dom_wires, item_key.cod_wires),
-            (interface_ty.inside, interface_ty.inside),
-            # (item_value.dom_wires, item_value.cod_wires),
-        )
-        glue = H(
-            item_key.dom,
-            item_value.cod,
-            boxes,
-            (
-                item_key.dom.inside,#tuple((d, d) for d in item_key.dom),
-                box_wires,
-                item_value.cod.inside,#tuple((d, d) for d in item_value.cod),
-            ),
-        )
-        # kv = item_key
-        # kv >>= glue #>> H.id(interface_ty) >> H.id()
-        # kv >>= item_value
-        return glue
+def compose_entry(item_key, item_value):
+    # a cospan for each box in boxes::
+    #     range(len(box.dom)) -> range(n_spiders) <- range(len(box.cod))
+    # Composition of two hypergraph diagram is given by the pushout of the span::
+    #     range(self.n_spiders) <- range(len(self.cod)) -> range(other.n_spiders)
+    interface_ty = Ty(*sorted({*item_key.cod.inside, *item_value.dom.inside}))
+    boxes = (
+        # item_key.to_diagram(),
+        H.id(interface_ty).to_diagram(),
+        # item_value.to_diagram(),
+    )
+    box_wires = (
+        # (item_key.dom_wires, item_key.cod_wires),
+        (interface_ty.inside, interface_ty.inside),
+        # (item_value.dom_wires, item_value.cod_wires),
+    )
+    glue = H(
+        item_value.cod,
+        item_key.dom,
+        boxes,
+        (
+            item_value.cod.inside,#tuple((d, d) for d in item_key.dom),
+            box_wires,
+            item_key.dom.inside,#tuple((d, d) for d in item_value.cod),
+        ),
+    )
+    return item_key << glue << item_value
 
 
 
