@@ -144,8 +144,6 @@ def compose_entry(item_key, item_value):
     # Composition of two hypergraph diagram is given by the pushout of the span::
     #     range(self.n_spiders) <- range(len(self.cod)) -> range(other.n_spiders)
     interface_ty = Ty(*sorted({*item_key.cod.inside, *item_value.dom.inside}))
-    item_value = item_value.simplify()
-    item_key = item_key.simplify()
     dom = item_value.dom
     cod = item_key.cod
     boxes = (
