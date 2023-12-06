@@ -144,27 +144,35 @@ def compose_entry(item_key, item_value):
     # Composition of two hypergraph diagram is given by the pushout of the span::
     #     range(self.n_spiders) <- range(len(self.cod)) -> range(other.n_spiders)
     interface_ty = Ty(*sorted({*item_key.cod.inside, *item_value.dom.inside}))
+    item_value = item_value.simplify()
+    item_key = item_key.simplify()
+    dom = item_value.dom
+    cod = item_key.cod
     boxes = (
+        # H.id(dom).to_diagram(),
         # item_key.to_diagram(),
         H.id(interface_ty).to_diagram(),
         # item_value.to_diagram(),
+        # H.id(cod).to_diagram(),
     )
     box_wires = (
-        # (item_key.dom_wires, item_key.cod_wires),
+        # (dom.inside, dom.inside),
+        # (item_key.dom.inside, item_key.cod.inside),
         (interface_ty.inside, interface_ty.inside),
         # (item_value.dom_wires, item_value.cod_wires),
+        # (cod.inside, cod.inside),
     )
     glue = H(
-        item_value.cod,
-        item_key.dom,
+        dom,
+        cod,
         boxes,
         (
-            item_value.cod.inside,#tuple((d, d) for d in item_key.dom),
+            dom.inside,
             box_wires,
-            item_key.dom.inside,#tuple((d, d) for d in item_value.cod),
+            cod.inside,
         ),
     )
-    return item_key << glue << item_value
+    return glue
 
 
 
