@@ -7,7 +7,7 @@ import sys
 import yaml
 import matplotlib.pyplot as plt
 from discopy import braided, cat, monoidal, frobenius, symmetric
-from discopy.frobenius import Spider, Swap, Hypergraph as H
+from discopy.frobenius import Diagram, Hypergraph as H
 
 from loader import HypergraphLoader, compose_entry
 
@@ -17,8 +17,7 @@ Box = frobenius.Box
 
 def compose_graphs(graphs):
     graph = functools.reduce(
-        # compose_entry,
-        lambda g, h: g >> h,
+        compose_entry,
         graphs)
     return graph.to_diagram()
 
@@ -31,9 +30,8 @@ def compose_graph_file(path: pathlib.Path):
             *yaml.compose_all(open(path), Loader=HypergraphLoader),
         )
     diagram = compose_graphs(G)
-    rewrite_steps = list(diagram.normalize())[0:-1:10]
     # TODO temporary path
-    diagram.to_gif(*rewrite_steps, path=path.with_suffix(".gif"), loop=True, timestep=100)
+    Diagram.to_gif(diagram.simplify(), path=path.with_suffix(".gif"), loop=True, timestep=100)
     return diagram
 
 def compose_all_graphs():

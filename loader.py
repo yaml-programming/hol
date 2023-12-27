@@ -7,7 +7,7 @@ from yaml.events import *
 from yaml.tokens import *
 from yaml.composer import ComposerError
 
-from discopy.frobenius import Hypergraph as H, Ty, Box
+from discopy.frobenius import Hypergraph as H, Ty, Box, Spider
 
 class HypergraphComposer:
 
@@ -91,7 +91,9 @@ class HypergraphComposer:
         tag = event.tag
         if tag is None or tag == '!':
             tag = self.DEFAULT_SCALAR_TAG
-        node = H.id(Ty(str(event.value))) \
+        # node = H.id(Ty(str(event.value))) \
+        #     if event.value != "" else H.id()
+        node = H.from_box(Box(str(event.value), Ty(str(event.value)), Ty(str(event.value)))) \
             if event.value != "" else H.id()
         if anchor is not None:
             self.anchors[anchor] = node
@@ -110,7 +112,8 @@ class HypergraphComposer:
             self.anchors[anchor] = node
         index = 0
         while not self.check_event(SequenceEndEvent):
-            node @= self.compose_node(node, index)
+            item = self.compose_node(node, index)
+            node = compose_entry(node, item)
             index += 1
         end_event = self.get_event()
         node.end_mark = end_event.end_mark
@@ -122,10 +125,6 @@ class HypergraphComposer:
         tag = start_event.tag
         if tag is None or tag == '!':
             tag = self.DEFAULT_MAPPING_TAG
-        # Note
-        # ----
-        # Abstractly, a hypergraph diagram can be seen as a cospan for the boundary::
-        #     range(len(dom)) -> range(n_spiders) <- range(len(cod))
         node = H.id()#Ty(str(start_event.start_mark)))
         if anchor is not None:
             self.anchors[anchor] = node
@@ -138,40 +137,38 @@ class HypergraphComposer:
         node.end_mark = end_event.end_mark
         return node
 
-def compose_entry(item_key, item_value):
-    # a cospan for each box in boxes::
-    #     range(len(box.dom)) -> range(n_spiders) <- range(len(box.cod))
-    # Composition of two hypergraph diagram is given by the pushout of the span::
-    #     range(self.n_spiders) <- range(len(self.cod)) -> range(other.n_spiders)
-    interface_ty = Ty(*sorted({*item_key.cod.inside, *item_value.dom.inside}))
-    dom = item_value.dom
-    cod = item_key.cod
-    boxes = (
-        # H.id(dom).to_diagram(),
-        # item_key.to_diagram(),
-        H.id(interface_ty).to_diagram(),
-        # item_value.to_diagram(),
-        # H.id(cod).to_diagram(),
-    )
-    box_wires = (
-        # (dom.inside, dom.inside),
-        # (item_key.dom.inside, item_key.cod.inside),
-        (interface_ty.inside, interface_ty.inside),
-        # (item_value.dom_wires, item_value.cod_wires),
-        # (cod.inside, cod.inside),
-    )
-    glue = H(
-        dom,
-        cod,
-        boxes,
-        (
-            dom.inside,
-            box_wires,
-            cod.inside,
+def compose_entry(k, v):
+    left_i = Ty(*sorted({*k.dom.inside}))#, *k.cod.inside, *v.dom.inside, *v.cod.inside}))
+    right_i = Ty(*sorted({*v.cod.inside}))
+    left = spiders(left_i, k.dom)
+    mid = spiders(k.cod, v.dom)
+    right = spiders(v.cod, right_i)
+    entry = left >> k >> mid >> v >> right
+    return entry
+
+def spiders(dom, cod):
+    interface_ty = Ty(*sorted(set(x.name for x in dom.inside + cod.inside)))
+    g = H(
+        dom=dom, cod=cod,
+        boxes=tuple(
+            Spider(
+                sum(1 for y in dom.inside if x.name == y.name),
+                sum(1 for y in cod.inside if x.name == y.name),
+                x)
+            for x in interface_ty
+        ),
+        wires=(
+            tuple(interface_ty.inside.index(x) for x in dom.inside), # input wires of the hypergraph
+            tuple( # input and output wires of boxes
+                (
+                    tuple(i for y in dom.inside if x.name == y.name),
+                    tuple(i for y in cod.inside if x.name == y.name),)
+                for i, x in enumerate(interface_ty.inside)
+            ),
+            tuple(interface_ty.inside.index(x) for x in cod.inside), # output wire of the hypergraph
         ),
     )
-    return glue
-
+    return g
 
 
 class HypergraphLoader(Reader, Scanner, Parser, HypergraphComposer, SafeConstructor, Resolver):
