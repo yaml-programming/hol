@@ -7,7 +7,7 @@ from yaml.events import *
 from yaml.tokens import *
 from yaml.composer import ComposerError
 
-from discopy.frobenius import Hypergraph as H, Ty, Box, Spider
+from discopy.frobenius import Hypergraph as H, Id, Ob, Ty, Box, Spider
 
 class HypergraphComposer:
 
@@ -138,37 +138,33 @@ class HypergraphComposer:
         return node
 
 def compose_entry(k, v):
-    left_i = Ty(*sorted({*k.dom.inside}))#, *k.cod.inside, *v.dom.inside, *v.cod.inside}))
-    right_i = Ty(*sorted({*v.cod.inside}))
-    left = spiders(left_i, k.dom)
-    mid = spiders(k.cod, v.dom)
-    right = spiders(v.cod, right_i)
-    entry = left >> k >> mid >> v >> right
-    return entry
-
-def spiders(dom, cod):
-    interface_ty = Ty(*sorted(set(x.name for x in dom.inside + cod.inside)))
+    # TODO if v == id
+    interface_ty = Ty(*sorted(set(x.name for x in set(k.spider_types + v.spider_types))))
     g = H(
-        dom=dom, cod=cod,
+        dom=k.cod, cod=v.dom,
         boxes=tuple(
             Spider(
-                sum(1 for y in dom.inside if x.name == y.name),
-                sum(1 for y in cod.inside if x.name == y.name),
-                x)
-            for x in interface_ty
+                sum(1 for y in k.cod.inside if x == y),
+                sum(1 for y in v.dom.inside if x == y),
+                Ty(x),
+            )
+            for x in interface_ty.inside
         ),
         wires=(
-            tuple(interface_ty.inside.index(x) for x in dom.inside), # input wires of the hypergraph
-            tuple( # input and output wires of boxes
+            tuple(range(len(k.cod.inside))), # input wires of the hypergraph
+            tuple(
                 (
-                    tuple(i for y in dom.inside if x.name == y.name),
-                    tuple(i for y in cod.inside if x.name == y.name),)
-                for i, x in enumerate(interface_ty.inside)
+                    tuple(i for i, y in enumerate(k.cod.inside) if x == y),
+                    tuple(i + len(k.cod.inside) for i, y in enumerate(v.dom.inside) if x == y),
+                )
+                for x in interface_ty.inside
             ),
-            tuple(interface_ty.inside.index(x) for x in cod.inside), # output wire of the hypergraph
+            tuple(range(len(k.cod.inside), len(k.cod.inside) + len(v.dom.inside))), # input wires of the hypergraph
         ),
     )
-    return g
+    entry = k >> g >> v
+    # g.to_diagram().draw()
+    return entry
 
 
 class HypergraphLoader(Reader, Scanner, Parser, HypergraphComposer, SafeConstructor, Resolver):
