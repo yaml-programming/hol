@@ -138,29 +138,18 @@ class HypergraphComposer:
         return node
 
 def compose_entry(k, v):
-    # TODO if v == id
-    interface_ty = Ty(*sorted(set(x.name for x in set(k.spider_types + v.spider_types))))
+    if len(v.cod + v.dom) == 0:
+        return k
+    spider_types = tuple(sorted(set(x.name for x in set(k.spider_types + v.spider_types))))
     g = H(
         dom=k.cod, cod=v.dom,
-        boxes=tuple(
-            Spider(
-                sum(1 for y in k.cod.inside if x == y),
-                sum(1 for y in v.dom.inside if x == y),
-                Ty(x),
-            )
-            for x in interface_ty.inside
-        ),
+        boxes=(),
         wires=(
-            tuple(range(len(k.cod.inside))), # input wires of the hypergraph
-            tuple(
-                (
-                    tuple(i for i, y in enumerate(k.cod.inside) if x == y),
-                    tuple(i + len(k.cod.inside) for i, y in enumerate(v.dom.inside) if x == y),
-                )
-                for x in interface_ty.inside
-            ),
-            tuple(range(len(k.cod.inside), len(k.cod.inside) + len(v.dom.inside))), # input wires of the hypergraph
+            k.cod.inside, # input wires of the hypergraph
+            (),#tuple(((s,),(s,)) for s in spider_types),
+            v.dom.inside, # input wires of the hypergraph
         ),
+        spider_types={Ob(s): Ty(Ob(s)) for s in spider_types},
     )
     entry = k >> g >> v
     # g.to_diagram().draw()
